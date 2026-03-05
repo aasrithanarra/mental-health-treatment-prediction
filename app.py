@@ -3,18 +3,19 @@ import pandas as pd
 import joblib
 import os
 
-# Page configuration
+# Page config
 st.set_page_config(page_title="Mental Health Treatment Predictor", page_icon="🧠")
 
 st.title("Mental Health Treatment Prediction")
-st.write("Fill in the details below to predict if mental health treatment may be required.")
 
-# Load trained model
+st.write("Enter the details below to check if mental health treatment may be needed.")
+
+# Load model
 model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
 model = joblib.load(model_path)
 
-# User Inputs
-age = st.number_input("Age", min_value=18, max_value=100, value=25)
+# Inputs
+age = st.number_input("Age", 18, 100, 25)
 
 gender = st.selectbox(
     "Gender",
@@ -36,7 +37,7 @@ benefits = st.selectbox(
     ["Yes", "No", "Don't know"]
 )
 
-# Convert categorical inputs to numeric values
+# Convert to numeric
 gender = 1 if gender == "Male" else 0
 family_history = 1 if family_history == "Yes" else 0
 
@@ -56,37 +57,41 @@ benefits_map = {
 work_interfere = work_map[work_interfere]
 benefits = benefits_map[benefits]
 
-# Prediction button
-if st.button("Predict Treatment Need"):
+# Create input dictionary
+input_dict = {
+    "Age": age,
+    "Gender": gender,
+    "family_history": family_history,
+    "work_interfere": work_interfere,
+    "benefits": benefits
+}
 
-    input_data = pd.DataFrame(
-        [[age, gender, family_history, work_interfere, benefits]],
-        columns=[
-            "Age",
-            "Gender",
-            "family_history",
-            "work_interfere",
-            "benefits"
-        ]
-    )
+# Convert to dataframe
+input_data = pd.DataFrame([input_dict])
+
+# Ensure column order matches training data
+input_data = input_data.reindex(columns=model.feature_names_in_)
+
+# Prediction
+if st.button("Predict Treatment Need"):
 
     prediction = model.predict(input_data)
     probability = model.predict_proba(input_data)[0][1]
 
     if prediction[0] == 1:
-        st.error("⚠️ The model predicts that mental health treatment may be needed.")
+        st.error("⚠️ The model predicts that mental health treatment may be required.")
     else:
         st.success("✅ The model predicts that treatment may not be required.")
 
     st.write(f"Prediction Confidence: **{probability*100:.2f}%**")
 
-    st.subheader("Helpful Suggestions")
-    
+    st.subheader("Suggestions")
+
     if prediction[0] == 1:
         st.write("- Consider speaking with a mental health professional.")
-        st.write("- Practice stress management techniques.")
-        st.write("- Take regular breaks and maintain work-life balance.")
+        st.write("- Practice relaxation techniques like meditation.")
+        st.write("- Maintain a balanced work-life schedule.")
     else:
-        st.write("- Maintain healthy lifestyle habits.")
-        st.write("- Continue monitoring mental wellbeing.")
-        st.write("- Stay socially connected with friends and family.")
+        st.write("- Maintain a healthy routine.")
+        st.write("- Stay socially connected.")
+        st.write("- Monitor stress levels regularly.")
